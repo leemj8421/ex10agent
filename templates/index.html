@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodeReview AI — 실시간 AI 코드 리뷰 & 품질 검증 플랫폼</title>
+  <meta name="description" content="FastAPI와 LLM(Gemini, OpenAI) 기반의 실시간 코드 품질 분석 서비스. 버그 탐지, 성능 개선, 리팩토링 제안 및 테스트 코드 자동 생성을 제공합니다.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── DESIGN SYSTEM & TOKENS (LIGHT MODE) ── */
+    :root {
+      --bg-light: #f8fafc; /* Slate 50 */
+      --bg-card: #ffffff;
+      --bg-panel: rgba(255, 255, 255, 0.85);
+      
+      --color-primary: #4f46e5; /* Indigo 600 */
+      --color-primary-glow: rgba(79, 70, 229, 0.08);
+      --color-accent: #2563eb; /* Blue 600 */
+      --color-accent-purple: #9333ea; /* Purple 600 */
+      
+      --color-success: #059669; /* Emerald 600 */
+      --color-warning: #d97706; /* Amber 600 */
+      --color-error: #dc2626; /* Red 600 */
+      --color-info: #0284c7; /* Sky 600 */
+      
+      --text-main: #0f172a; /* Slate 900 */
+      --text-muted: #64748b; /* Slate 500 */
+      
+      --border-subtle: #e2e8f0; /* Slate 200 */
+      --border-focus: rgba(79, 70, 229, 0.4);
+      
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 18px;
+      --radius-full: 9999px;
+      
+      --shadow-base: 0 10px 30px -10px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+      --shadow-hover: 0 20px 40px -15px rgba(79, 70, 229, 0.08), 0 1px 5px rgba(0, 0, 0, 0.04);
+      --shadow-glow-red: 0 15px 35px -10px rgba(220, 38, 38, 0.12);
+      --shadow-glow-green: 0 15px 35px -10px rgba(5, 150, 105, 0.12);
+      --shadow-glow-amber: 0 15px 35px -10px rgba(217, 119, 6, 0.12);
+      
+      --transition-base: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ── BASE STYLES ── */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-main);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 22px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      text-decoration: none;
+      transition: var(--transition-base);
+      border: none;
+    }
+    .btn--primary {
+      background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(79, 70, 229, 0.2);
+    }
+    .btn--primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35);
+    }
+    .btn--outline {
+      background: #fff;
+      border: 1.5px solid var(--border-subtle);
+      color: var(--text-main);
+    }
+    .btn--outline:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background-color: var(--color-primary-glow);
+    }
+    .btn--glowing {
+      background: linear-gradient(135deg, var(--color-accent-purple), var(--color-primary));
+      color: #fff;
+      position: relative;
+    }
+    .btn--glowing::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, var(--color-accent-purple), var(--color-primary));
+      z-index: -1;
+      opacity: 0.3;
+      filter: blur(8px);
+      transition: var(--transition-base);
+    }
+    .btn--glowing:hover {
+      transform: translateY(-2px);
+    }
+    .btn--glowing:hover::after {
+      filter: blur(12px);
+      opacity: 0.5;
+    }
+
+    /* ── HEADER NAVIGATION ── */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 72px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      transition: var(--transition-base);
+    }
+    .header--scrolled {
+      height: 64px;
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+    .header__inner {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+    .logo__icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-accent-purple));
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: var(--transition-base);
+    }
+    .nav-links a:hover {
+      color: var(--color-primary);
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #ffffff;
+      padding: 6px 12px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border-subtle);
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+    .status-badge__dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--color-error);
+      border-radius: 50%;
+      transition: var(--transition-base);
+    }
+    .status-badge__dot.online {
+      background-color: var(--color-success);
+      box-shadow: 0 0 6px var(--color-success);
+    }
+
+    /* Hamburger menu (Mobile) */
+    .menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-main);
+      font-size: 1.5rem;
+    }
+
+    /* ── HERO SECTION ── */
+    .hero {
+      padding-top: 160px;
+      padding-bottom: 96px;
+      position: relative;
+      background: radial-gradient(circle at 80% 20%, rgba(79, 70, 229, 0.06) 0%, transparent 50%),
+                  radial-gradient(circle at 15% 80%, rgba(147, 51, 234, 0.04) 0%, transparent 50%);
+    }
+    .hero__grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+    .hero__tagline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--color-primary-glow);
+      border: 1px solid rgba(79, 70, 229, 0.15);
+      padding: 6px 16px;
+      border-radius: var(--radius-full);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      margin-bottom: 24px;
+      letter-spacing: 0.05em;
+    }
+    .hero__tagline-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--color-success);
+      border-radius: 50%;
+      display: inline-block;
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: .4; transform: scale(1.25); }
+    }
+    .hero__title {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(2.5rem, 5vw, 3.75rem);
+      font-weight: 800;
+      line-height: 1.15;
+      color: var(--text-main);
+      margin-bottom: 20px;
+    }
+    .hero__title em {
+      font-style: normal;
+      background: linear-gradient(90deg, var(--color-primary), var(--color-accent-purple), var(--color-accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero__desc {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      line-height: 1.7;
+      margin-bottom: 36px;
+      max-width: 540px;
+    }
+    .hero__ctas {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 48px;
+    }
+    .hero__stats {
+      display: flex;
+      gap: 48px;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 32px;
+    }
+    .hero__stat-num {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .hero__stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 4px;
+    }
+
+    /* ── CODE WORKSPACE MOCKUP ── */
+    .mockup-window {
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+      transition: var(--transition-base);
+    }
+    .mockup-window:hover {
+      box-shadow: 0 25px 55px rgba(0, 0, 0, 0.12), 0 0 30px rgba(79, 70, 229, 0.04);
+    }
+    .mockup-header {
+      background: #f8fafc;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .mockup-header__dots {
+      display: flex;
+      gap: 8px;
+    }
+    .mockup-header__dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .mockup-header__dot--red { background-color: #ff5f56; }
+    .mockup-header__dot--yellow { background-color: #ffbd2e; }
+    .mockup-header__dot--green { background-color: #27c93f; }
+    .mockup-header__title {
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .mockup-body {
+      padding: 24px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.8rem;
+      color: #24292e;
+      background: #f6d2d200; /* GitHub light style code */
+    }
+    .code-line-row {
+      display: flex;
+      gap: 16px;
+      line-height: 1.6;
+      margin-bottom: 4px;
+    }
+    .code-line-num {
+      color: #babbbc;
+      width: 18px;
+      text-align: right;
+      user-select: none;
+    }
+    .code-line-content {
+      white-space: pre;
+    }
+    .kw { color: #d73a49; font-weight: 600; }
+    .fn { color: #6f42c1; }
+    .str { color: #032f62; }
+    .num { color: #005cc5; }
+    .cmt { color: #6a737d; font-style: italic; }
+
+    /* Interactive mock review element */
+    .mockup-review {
+      margin-top: 18px;
+      padding: 16px;
+      background: #f5f8ff;
+      border-left: 3px solid var(--color-primary);
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.5s ease;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.05);
+    }
+    .mockup-review.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .mockup-review__header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      font-size: 0.75rem;
+      color: var(--color-primary);
+      margin-bottom: 8px;
+    }
+    .mockup-review__comment {
+      font-size: 0.72rem;
+      color: #334155;
+      line-height: 1.4;
+    }
+    .mockup-trigger-container {
+      padding: 12px;
+      background: #f8fafc;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    /* ── ANALYSIS MODULES grid ── */
+    .section-title-wrap {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .section-eyebrow {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--color-primary);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .section-heading {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+    
+    .features {
+      padding: 96px 0;
+      border-top: 1px solid var(--border-subtle);
+      background: #ffffff;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    .features-grid--bottom {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      max-width: 792px;
+      margin: 0 auto;
+    }
+    .feature-card {
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
+      padding: 32px;
+      transition: var(--transition-base);
+      position: relative;
+      box-shadow: var(--shadow-base);
+    }
+    
+    /* Glowing card hover effects */
+    .feature-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(79, 70, 229, 0.3);
+      box-shadow: var(--shadow-hover);
+    }
+    .feature-card--red:hover {
+      border-color: rgba(220, 38, 38, 0.3);
+      box-shadow: var(--shadow-glow-red);
+    }
+    .feature-card--green:hover {
+      border-color: rgba(5, 150, 105, 0.3);
+      box-shadow: var(--shadow-glow-green);
+    }
+    .feature-card--amber:hover {
+      border-color: rgba(217, 119, 6, 0.3);
+      box-shadow: var(--shadow-glow-amber);
+    }
+
+    .feature-card__icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      margin-bottom: 20px;
+      background: #f8fafc;
+      border: 1px solid var(--border-subtle);
+    }
+    
+    /* Dynamic Icon Colors */
+    .feature-card--blue .feature-card__icon { color: var(--color-accent); background: rgba(37, 99, 235, 0.06); }
+    .feature-card--red .feature-card__icon { color: var(--color-error); background: rgba(220, 38, 38, 0.06); }
+    .feature-card--amber .feature-card__icon { color: var(--color-warning); background: rgba(217, 119, 6, 0.06); }
+    .feature-card--purple .feature-card__icon { color: var(--color-accent-purple); background: rgba(147, 51, 234, 0.06); }
+    .feature-card--green .feature-card__icon { color: var(--color-success); background: rgba(5, 150, 105, 0.06); }
+    
+    .feature-card__title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 10px;
+    }
+    .feature-card__desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── WORKFLOW STEPS (Timeline) ── */
+    .timeline-sec {
+      padding: 96px 0;
+      background-color: var(--bg-light);
+      border-top: 1px solid var(--border-subtle);
+    }
+    .timeline {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      position: relative;
+    }
+    .timeline::after {
+      content: '';
+      position: absolute;
+      top: 28px;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--color-primary), var(--color-info));
+      z-index: 1;
+      opacity: 0.2;
+    }
+    .timeline-node {
+      text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+    .timeline-node__badge {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2px solid var(--color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--color-primary);
+      margin: 0 auto 20px;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+    }
+    .timeline-node:nth-child(2) .timeline-node__badge {
+      border-color: var(--color-info);
+      color: var(--color-info);
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.1);
+    }
+    .timeline-node:nth-child(3) .timeline-node__badge {
+      border-color: var(--color-success);
+      color: var(--color-success);
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.1);
+    }
+    .timeline-node__title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+    .timeline-node__desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      max-width: 280px;
+      margin: 0 auto;
+    }
+
+    /* ── DYNAMIC CTA BANNER ── */
+    .cta-banner-sec {
+      padding: 96px 0;
+      background: #ffffff;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .cta-banner {
+      background: radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.05) 0%, transparent 60%),
+                  linear-gradient(135deg, #f8fafc, #f1f5f9);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 64px 48px;
+      text-align: center;
+      box-shadow: var(--shadow-base);
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-banner__title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 16px;
+    }
+    .cta-banner__desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      max-width: 500px;
+      margin: 0 auto 36px;
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      border-top: 1px solid var(--border-subtle);
+      background-color: #f1f5f9;
+      padding: 40px 0;
+      text-align: center;
+    }
+    .footer__copyright {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* ── MOBILE RESPONSIVENESS ── */
+    @media (max-width: 1024px) {
+      .hero__grid {
+        grid-template-columns: 1fr;
+        gap: 48px;
+        text-align: center;
+      }
+      .hero__desc {
+        margin: 0 auto 36px;
+      }
+      .hero__ctas {
+        justify-content: center;
+      }
+      .hero__stats {
+        justify-content: center;
+      }
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .features-grid--bottom {
+        grid-template-columns: repeat(2, 1fr);
+        max-width: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+      .menu-toggle {
+        display: block;
+      }
+      .features-grid, .features-grid--bottom {
+        grid-template-columns: 1fr;
+      }
+      .timeline {
+        grid-template-columns: 1fr;
+        gap: 48px;
+      }
+      .timeline::after {
+        display: none;
+      }
+      .cta-banner {
+        padding: 40px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER NAVIGATION -->
+  <header class="header" id="navbar">
+    <div class="container header__inner">
+      <a href="/" class="logo">
+        <div class="logo__icon">🤖</div>
+        <span>CodeReview AI</span>
+      </a>
+      
+      <nav>
+        <ul class="nav-links">
+          <li><a href="#features">핵심 기능</a></li>
+          <li><a href="#workflow">분석 단계</a></li>
+          <li><a href="/analyze">대시보드</a></li>
+        </ul>
+      </nav>
+
+      <div class="header-actions">
+        <div class="status-badge" id="api-status" title="서버 연결 체크">
+          <span class="status-badge__dot" id="api-status-dot"></span>
+          <span id="api-status-text">서버 연결 확인 중</span>
+        </div>
+        <a href="/analyze" class="btn btn--primary" id="start-btn">검증 시작</a>
+        <button class="menu-toggle" id="menu-btn">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="hero">
+    <div class="container hero__grid">
+      <!-- Info Col -->
+      <div>
+        <div class="hero__tagline">
+          <span class="hero__tagline-dot"></span>
+          <span>Google Gemini &amp; OpenAI 기반 차세대 분석기</span>
+        </div>
+        <h1 class="hero__title">
+          완벽한 코드 리뷰,<br>
+          이제 <em>5분 만에</em> 받으세요
+        </h1>
+        <p class="hero__desc">
+          시니어 개발자의 대기 없이, PR 오픈 즉시 병렬 분석이 실행됩니다. 잠재적 런타임 오류, 복잡도 초과, 성능 병목 및 테스트 누락을 즉각적으로 잡아내어 안전한 제품 배포를 보장합니다.
+        </p>
+        <div class="hero__ctas">
+          <a href="/analyze" class="btn btn--glowing" style="padding: 14px 28px;">무료 분석 대시보드 열기</a>
+          <a href="#workflow" class="btn btn--outline" style="padding: 14px 28px;">작동 방식 보기</a>
+        </div>
+        
+        <div class="hero__stats">
+          <div>
+            <div class="hero__stat-num">90%</div>
+            <div class="hero__stat-label">리뷰 병목 감소</div>
+          </div>
+          <div>
+            <div class="hero__stat-num">5종</div>
+            <div class="hero__stat-label">AI 핵심 분석 모듈</div>
+          </div>
+          <div>
+            <div class="hero__stat-num">&lt; 30초</div>
+            <div class="hero__stat-label">평균 피드백 지연</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview Mockup Col -->
+      <div>
+        <div class="mockup-window">
+          <div class="mockup-header">
+            <div class="mockup-header__dots">
+              <span class="mockup-header__dot mockup-header__dot--red"></span>
+              <span class="mockup-header__dot mockup-header__dot--yellow"></span>
+              <span class="mockup-header__dot mockup-header__dot--green"></span>
+            </div>
+            <div class="mockup-header__title">process_data.py</div>
+            <div style="width: 48px;"></div>
+          </div>
+          
+          <div class="mockup-body" id="mock-editor">
+            <div class="code-line-row">
+              <span class="code-line-num">1</span>
+              <span class="code-line-content"><span class="kw">def</span> <span class="fn">process_data</span>(data):</span>
+            </div>
+            <div class="code-line-row">
+              <span class="code-line-num">2</span>
+              <span class="code-line-content">    result = []</span>
+            </div>
+            <div class="code-line-row">
+              <span class="code-line-num">3</span>
+              <span class="code-line-content">    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(data)):</span>
+            </div>
+            <div class="code-line-row" id="highlight-row-4">
+              <span class="code-line-num">4</span>
+              <span class="code-line-content">        <span class="kw">if</span> data[i] &gt; <span class="num">0</span>:</span>
+            </div>
+            <div class="code-line-row">
+              <span class="code-line-num">5</span>
+              <span class="code-line-content">            result.<span class="fn">append</span>(data[i] * <span class="num">2</span>)</span>
+            </div>
+            <div class="code-line-row">
+              <span class="code-line-num">6</span>
+              <span class="code-line-content">    <span class="kw">return</span> result</span>
+            </div>
+            
+            <div class="mockup-review" id="review-box">
+              <div class="mockup-review__header">
+                <span>🤖 AI Code Review</span>
+                <span style="color:var(--color-warning); font-size: 0.65rem;">[경고] 가독성 개선 가능</span>
+              </div>
+              <div class="mockup-review__comment">
+                리스트 인덱싱(data[i]) 대신 <code>enumerate(data)</code> 사용이 권장됩니다. 혹은 리스트 컴프리헨션을 사용하여 <code>[x * 2 for x in data if x > 0]</code> 형태로 단축 처리하여 가독성을 극대화하세요.
+              </div>
+            </div>
+          </div>
+          
+          <div class="mockup-trigger-container">
+            <button class="btn btn--primary" id="run-mock-btn" style="padding: 6px 14px; font-size: 0.75rem; border-radius: var(--radius-sm)">AI 리뷰 데모 실행</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- KEY FEATURES SECTION -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-title-wrap">
+        <p class="section-eyebrow">핵심 기능 구성</p>
+        <h2 class="section-heading">5가지 차원의 다면 코드 검증</h2>
+      </div>
+
+      <div class="features-grid">
+        <!-- Card 1 -->
+        <div class="feature-card feature-card--blue">
+          <div class="feature-card__icon">📊</div>
+          <h3 class="feature-card__title">종합 코드 분석</h3>
+          <p class="feature-card__desc">정적 코드 검사 도구와 결합하여 순환 복잡도(Radon), 중복 코드 비율, 컨벤션(PEP8/ESLint) 준수율을 계산하고 코드 가독성 점수를 매깁니다.</p>
+        </div>
+        
+        <!-- Card 2 -->
+        <div class="feature-card feature-card--red">
+          <div class="feature-card__icon">🐛</div>
+          <h3 class="feature-card__title">잠재적 버그 탐지</h3>
+          <p class="feature-card__desc">Null 포인터 참조, 예외 핸들링 부재, 배열 경계 초과 및 자원 누수 가능성 등 실제로 런타임 장애를 일으킬 위험이 있는 위험 로직을 선별합니다.</p>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="feature-card feature-card--amber">
+          <div class="feature-card__icon">⚡</div>
+          <h3 class="feature-card__title">성능 패턴 최적화</h3>
+          <p class="feature-card__desc">루프 내 불필요 연산, 메모리 효율이 나쁜 비표준 내장 함수, 중복 I/O 처리 및 SQL N+1 쿼리 병목 지점을 찾고 최적의 Big-O 계산 성능 개선 코드를 제안합니다.</p>
+        </div>
+      </div>
+
+      <div class="features-grid--bottom">
+        <!-- Card 4 -->
+        <div class="feature-card feature-card--purple">
+          <div class="feature-card__icon">🔧</div>
+          <h3 class="feature-card__title">리팩토링 &amp; 디자인 패턴</h3>
+          <p class="feature-card__desc">단일 책임 원칙(SRP) 위반 등 SOLID 원칙에 부합하지 않거나, Extract Class/Method 리팩토링 및 팩토리/전략 패턴 적용이 가능한 구조적 변경 영역을 설계합니다.</p>
+        </div>
+
+        <!-- Card 5 -->
+        <div class="feature-card feature-card--green">
+          <div class="feature-card__icon">✅</div>
+          <h3 class="feature-card__title">단위 테스트 자동 생성</h3>
+          <p class="feature-card__desc">분석된 로직의 정상 흐름은 물론, 경계값(Edge Case) 및 잘못된 파라미터 유효성 검증 예외 처리가 작동하는지 검증하는 Mock 테스트 코드를 자동 생성합니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WORKFLOW STEPS -->
+  <section class="timeline-sec" id="workflow">
+    <div class="container">
+      <div class="section-title-wrap">
+        <p class="section-eyebrow">초간단 워크플로우</p>
+        <h2 class="section-heading">리뷰어 대기 없는 3단계 프로세스</h2>
+      </div>
+
+      <div class="timeline">
+        <div class="timeline-node">
+          <div class="timeline-node__badge">1</div>
+          <h3 class="timeline-node__title">코드 및 타겟 제출</h3>
+          <p class="timeline-node__desc">GitHub PR URL 입력, 복사한 날것의 코드 소스 붙여넣기, 혹은 개별 소스코드 파일 드래그 업로드가 모두 가능합니다.</p>
+        </div>
+        <div class="timeline-node">
+          <div class="timeline-node__badge">2</div>
+          <h3 class="timeline-node__title">실시간 스트리밍 분석</h3>
+          <p class="timeline-node__desc">FastAPI 비동기 웹훅 파이프라인과 Celery 병렬 에이전트들이 LLM을 활용해 실시간 SSE 방식으로 코드 진단을 출력합니다.</p>
+        </div>
+        <div class="timeline-node">
+          <div class="timeline-node__badge">3</div>
+          <h3 class="timeline-node__title">피드백 보고서 즉시 활용</h3>
+          <p class="timeline-node__desc">완료된 마크다운 피드백 보고서를 인라인 에디터에서 확인하고 팀에 공유할 수 있도록 PDF 또는 JSON으로 내보냅니다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA BANNER -->
+  <section class="cta-banner-sec">
+    <div class="container">
+      <div class="cta-banner">
+        <h2 class="cta-banner__title">깨끗한 코드 품질의 시작</h2>
+        <p class="cta-banner__desc">지금 즉시 무료 분석 대시보드를 열어 AI 에이전트가 검증하는 실시간 스마트 코드 품질 진단을 경험해 보세요.</p>
+        <a href="/analyze" class="btn btn--glowing" style="padding: 16px 36px; font-size: 1rem;">시작하기 🚀</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <p class="footer__copyright">© 2026 CodeReview AI. Powered by Gemini &amp; OpenAI. All Rights Reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Navbar scroll interaction
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 20) {
+        navbar.classList.add('header--scrolled');
+      } else {
+        navbar.classList.remove('header--scrolled');
+      }
+    });
+
+    // Check API server health
+    async function checkApiHealth() {
+      const dot = document.getElementById('api-status-dot');
+      const text = document.getElementById('api-status-text');
+      try {
+        const res = await fetch('/api/v1/health');
+        if (res.ok) {
+          const data = await res.json();
+          dot.classList.add('online');
+          text.textContent = `Online (${data.provider === 'gemini' ? 'Gemini' : 'OpenAI'})`;
+        } else {
+          dot.classList.remove('online');
+          text.textContent = 'Server Error';
+        }
+      } catch (e) {
+        dot.classList.remove('online');
+        text.textContent = 'Offline';
+      }
+    }
+    checkApiHealth();
+    // Re-check every 30s
+    setInterval(checkApiHealth, 30000);
+
+    // Mock Demo Action
+    const mockBtn = document.getElementById('run-mock-btn');
+    const highlightRow = document.getElementById('highlight-row-4');
+    const reviewBox = document.getElementById('review-box');
+    let isMockRunning = false;
+
+    mockBtn.addEventListener('click', () => {
+      if (isMockRunning) return;
+      isMockRunning = true;
+      mockBtn.disabled = true;
+      mockBtn.textContent = '리뷰어 실행 중...';
+      
+      // Reset first
+      highlightRow.style.backgroundColor = 'transparent';
+      reviewBox.classList.remove('visible');
+
+      setTimeout(() => {
+        // Highlight Row
+        highlightRow.style.backgroundColor = 'rgba(79, 70, 229, 0.08)';
+        highlightRow.style.transition = 'background-color 0.5s ease';
+        
+        setTimeout(() => {
+          // Show critique review box
+          reviewBox.classList.add('visible');
+          mockBtn.disabled = false;
+          mockBtn.textContent = 'AI 리뷰 다시 실행';
+          isMockRunning = false;
+        }, 800);
+      }, 500);
+    });
+
+    // Mobile menu toggle
+    const menuBtn = document.getElementById('menu-btn');
+    const navLinks = document.querySelector('.nav-links');
+    if (menuBtn && navLinks) {
+      menuBtn.addEventListener('click', () => {
+        const isHidden = window.getComputedStyle(navLinks).display === 'none';
+        if (isHidden) {
+          navLinks.style.display = 'flex';
+          navLinks.style.flexDirection = 'column';
+          navLinks.style.position = 'absolute';
+          navLinks.style.top = '72px';
+          navLinks.style.left = '0';
+          navLinks.style.width = '100%';
+          navLinks.style.background = '#ffffff';
+          navLinks.style.borderBottom = '1px solid var(--border-subtle)';
+          navLinks.style.padding = '16px';
+          navLinks.style.gap = '12px';
+          navLinks.style.boxShadow = '0 10px 15px rgba(0,0,0,0.05)';
+        } else {
+          navLinks.removeAttribute('style');
+        }
+      });
+    }
+  </script>
+</body>
+</html>

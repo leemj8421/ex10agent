@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>대시보드 — CodeReview AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── DESIGN SYSTEM & TOKENS (LIGHT THEME) ── */
+    :root {
+      --bg-light: #f8fafc; /* Slate 50 */
+      --bg-card: #ffffff;
+      --bg-hover: #f1f5f9; /* Slate 100 */
+      
+      --color-primary: #4f46e5; /* Indigo 600 */
+      --color-primary-light: #e0e7ff; /* Indigo 100 */
+      --color-primary-glow: rgba(79, 70, 229, 0.05);
+      --color-accent: #2563eb; /* Blue 600 */
+      --color-accent-light: #dbeafe; /* Blue 100 */
+      --color-accent-purple: #9333ea; /* Purple 600 */
+      
+      --color-success: #059669; /* Emerald 600 */
+      --color-success-bg: #ecfdf5; /* Emerald 50 */
+      --color-warning: #d97706; /* Amber 600 */
+      --color-warning-bg: #fffbeb; /* Amber 50 */
+      --color-error: #dc2626; /* Red 600 */
+      --color-error-bg: #fef2f2; /* Red 50 */
+      --color-info: #0284c7; /* Sky 600 */
+      --color-info-bg: #f0f9ff; /* Sky 50 */
+      
+      --text-main: #0f172a; /* Slate 900 */
+      --text-muted: #64748b; /* Slate 500 */
+      --border-subtle: #e2e8f0; /* Slate 200 */
+      --border-focus: rgba(79, 70, 229, 0.4);
+      
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --radius-full: 9999px;
+      
+      --shadow-base: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+      
+      --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ── BASE RESET ── */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-subtle);
+      height: 64px;
+      display: flex;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header__inner {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1.15rem;
+    }
+    .logo__icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-accent-purple));
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.05rem;
+      color: #fff;
+    }
+    .nav-back {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition-base);
+      font-weight: 500;
+    }
+    .nav-back:hover {
+      color: var(--color-primary);
+    }
+
+    /* ── DASHBOARD GRID LAYOUT ── */
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      min-height: calc(100vh - 64px);
+    }
+
+    /* Left Sidebar: Controls & Input */
+    .sidebar {
+      background-color: #ffffff;
+      border-right: 1px solid var(--border-subtle);
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .sidebar__title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    /* Segmented Tab Control */
+    .tabs {
+      display: flex;
+      background: var(--bg-light);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: var(--transition-base);
+    }
+    .tab-btn.active {
+      background: #ffffff;
+      color: var(--text-main);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Tab Panels */
+    .tab-panel {
+      display: none;
+    }
+    .tab-panel.active {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Form Fields */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .form-input {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      border: 1.5px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      outline: none;
+      transition: var(--transition-base);
+      background-color: var(--bg-light);
+    }
+    .form-input:focus {
+      border-color: var(--color-primary);
+      background-color: #ffffff;
+      box-shadow: 0 0 0 3px var(--color-primary-glow);
+    }
+    .form-textarea {
+      width: 100%;
+      min-height: 240px;
+      padding: 12px;
+      font-family: 'SF Mono', monospace;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      border: 1.5px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      outline: none;
+      resize: vertical;
+      background-color: #f8fafc;
+      color: #334155;
+    }
+    .form-textarea:focus {
+      border-color: var(--color-primary);
+      background-color: #ffffff;
+    }
+    .form-select {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      border: 1.5px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      outline: none;
+      background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 12px center;
+      -webkit-appearance: none;
+      appearance: none;
+      cursor: pointer;
+    }
+
+    /* Drag & Drop zone */
+    .drop-zone {
+      border: 2px dashed var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px 16px;
+      text-align: center;
+      cursor: pointer;
+      background-color: var(--bg-light);
+      transition: var(--transition-base);
+      position: relative;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--color-primary);
+      background-color: var(--color-primary-glow);
+    }
+    .drop-zone__icon { font-size: 2rem; margin-bottom: 8px; }
+    .drop-zone__title { font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; }
+    .drop-zone__desc { font-size: 0.72rem; color: var(--text-muted); }
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    /* File Preview */
+    .file-badge {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background-color: var(--color-primary-light);
+      border: 1px solid rgba(79, 70, 229, 0.2);
+      border-radius: var(--radius-md);
+      font-size: 0.8rem;
+    }
+    .file-badge.visible {
+      display: flex;
+    }
+    .file-badge__name { font-weight: 600; color: var(--color-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+    .file-badge__size { font-size: 0.7rem; color: var(--text-muted); }
+    .file-badge__remove { background: none; border: none; cursor: pointer; color: var(--text-muted); font-weight: 700; }
+    .file-badge__remove:hover { color: var(--color-error); }
+
+    /* Module checklists (grid) */
+    .modules-check-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .module-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--border-subtle);
+      background-color: var(--bg-light);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 500;
+      user-select: none;
+      transition: var(--transition-base);
+    }
+    .module-item:hover {
+      border-color: var(--color-primary);
+    }
+    .module-item input[type="checkbox"] {
+      display: none;
+    }
+    .module-item__indicator {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      border: 1.5px solid #cbd5e1;
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition-base);
+    }
+    .module-item input:checked + .module-item__indicator {
+      background-color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+    .module-item input:checked + .module-item__indicator::after {
+      content: '✓';
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+    }
+    .module-item.checked {
+      border-color: var(--color-primary);
+      background-color: var(--color-primary-glow);
+    }
+
+    /* Submit action button */
+    .submit-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #fff;
+      background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.15);
+      transition: var(--transition-base);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .submit-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 15px rgba(79, 70, 229, 0.25);
+    }
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Input preview of code metadata */
+    .code-metadata-box {
+      background: var(--bg-hover);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      font-size: 0.75rem;
+      border: 1px solid var(--border-subtle);
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .code-metadata-box.visible {
+      display: flex;
+    }
+    .code-metadata-row {
+      display: flex;
+      justify-content: space-between;
+    }
+    .code-metadata-label { color: var(--text-muted); }
+    .code-metadata-val { font-weight: 600; }
+
+    /* Right Main Panel: Display & Results */
+    .main-content {
+      padding: 32px 48px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── EMPTY STATE ── */
+    .state-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 16px;
+      color: var(--text-muted);
+    }
+    .state-empty__icon {
+      font-size: 4rem;
+      background: #f1f5f9;
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .state-empty__title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .state-empty__desc {
+      font-size: 0.85rem;
+      max-width: 380px;
+    }
+
+    /* ── RUNNING / LOADING STATE ── */
+    .state-running {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 32px;
+    }
+    .spinner-ring {
+      width: 56px;
+      height: 56px;
+      border: 3.5px solid var(--border-subtle);
+      border-top-color: var(--color-primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .running-title { font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; text-align: center; }
+    .running-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 340px;
+    }
+    .running-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #ffffff;
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: var(--transition-base);
+    }
+    .running-step.active {
+      border-color: var(--color-primary);
+      background-color: var(--color-primary-glow);
+      color: var(--color-primary);
+    }
+    .running-step.done {
+      border-color: var(--color-success);
+      color: var(--color-success);
+    }
+    .running-step__icon { font-size: 1rem; width: 20px; text-align: center; }
+    .running-step__label { flex: 1; }
+    .running-step__spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+
+    /* ── RESULTS WORKSPACE ── */
+    .state-results {
+      display: none;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 18px;
+    }
+    .results-header__info h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    .results-header__meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .results-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .action-btn {
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1.5px solid var(--border-subtle);
+      background-color: #ffffff;
+      color: var(--text-main);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition-base);
+    }
+    .action-btn:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+    .action-btn--primary {
+      background-color: var(--color-primary);
+      color: #fff;
+      border-color: var(--color-primary);
+    }
+    .action-btn--primary:hover {
+      background-color: #3f38cc;
+      color: #fff;
+    }
+
+    /* Metrics Summary Cards Grid */
+    .metrics-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .metric-card {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      text-align: center;
+      box-shadow: var(--shadow-base);
+    }
+    .metric-card__val {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.85rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .metric-card__label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Collapsible Result Modules */
+    .module-card {
+      background-color: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-base);
+      transition: var(--transition-base);
+    }
+    .module-card.open {
+      box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.03);
+    }
+    .module-card__header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 24px;
+      cursor: pointer;
+      user-select: none;
+      background: #ffffff;
+      border-bottom: 1px solid transparent;
+      transition: var(--transition-base);
+    }
+    .module-card__header:hover {
+      background: var(--bg-hover);
+    }
+    .module-card.open .module-card__header {
+      border-bottom-color: var(--border-subtle);
+    }
+    .module-card__icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      background-color: var(--bg-light);
+    }
+    .module-card__title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      flex: 1;
+    }
+    .module-card__arrow {
+      font-size: 1rem;
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+    }
+    .module-card.open .module-card__arrow {
+      transform: rotate(180deg);
+    }
+    .module-card__body {
+      display: none;
+      padding: 24px;
+    }
+    .module-card.open .module-card__body {
+      display: block;
+    }
+
+    /* Markdown styling inside module card */
+    .markdown-body {
+      font-size: 0.85rem;
+      line-height: 1.7;
+      color: #334155;
+    }
+    .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+      font-family: 'Outfit', sans-serif;
+      color: var(--text-main);
+      font-weight: 700;
+      margin: 1.25em 0 0.5em;
+    }
+    .markdown-body h1 { font-size: 1.1rem; }
+    .markdown-body h2 { font-size: 1rem; }
+    .markdown-body h3 { font-size: 0.9rem; }
+    .markdown-body p { margin-bottom: 1em; }
+    .markdown-body ul, .markdown-body ol {
+      padding-left: 1.5em;
+      margin-bottom: 1em;
+    }
+    .markdown-body li {
+      margin-bottom: 0.25em;
+    }
+    .markdown-body code {
+      font-family: monospace;
+      background: #f1f5f9;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.85em;
+      color: #0f172a;
+    }
+    .markdown-body pre {
+      background: #0f172a;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      overflow-x: auto;
+      margin: 1em 0;
+    }
+    .markdown-body pre code {
+      background: none;
+      padding: 0;
+      color: #e2e8f0;
+      font-size: 0.82rem;
+    }
+    .markdown-body blockquote {
+      border-left: 3.5px solid var(--color-primary);
+      padding-left: 14px;
+      color: var(--text-muted);
+      margin: 1em 0;
+      font-style: italic;
+    }
+    .markdown-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1em 0;
+    }
+    .markdown-body th, .markdown-body td {
+      border: 1px solid var(--border-subtle);
+      padding: 8px 12px;
+      text-align: left;
+    }
+    .markdown-body th {
+      background: var(--bg-light);
+      font-weight: 600;
+    }
+
+    /* Warning/finding logs customization within markdown */
+    .finding-block {
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      border-left: 4px solid;
+      margin-bottom: 12px;
+      font-size: 0.82rem;
+    }
+    .finding-block--critical { background-color: var(--color-error-bg); border-left-color: var(--color-error); color: #991b1b; }
+    .finding-block--warning { background-color: var(--color-warning-bg); border-left-color: var(--color-warning); color: #92400e; }
+    .finding-block--info { background-color: var(--color-info-bg); border-left-color: var(--color-info); color: #075985; }
+
+    /* RESET / NEW ACTION */
+    .new-btn {
+      width: 100%;
+      padding: 14px;
+      border: 1.5px dashed var(--border-subtle);
+      background-color: transparent;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.85rem;
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition: var(--transition-base);
+      text-align: center;
+      margin-top: 16px;
+    }
+    .new-btn:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background-color: var(--color-primary-glow);
+    }
+
+    /* ── RESPONSIVE DESIGN ── */
+    @media (max-width: 1024px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--border-subtle);
+        max-height: 500px;
+      }
+      .main-content {
+        padding: 24px;
+      }
+    }
+    @media (max-width: 640px) {
+      .modules-check-grid {
+        grid-template-columns: 1fr;
+      }
+      .metrics-bar {
+        grid-template-columns: 1fr 1fr;
+      }
+      .results-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .results-actions {
+        width: 100%;
+      }
+      .results-actions button {
+        flex: 1;
+      }
+    }
+
+    /* ── PDF PRINT STYLES ── */
+    @media print {
+      body {
+        background-color: #fff !important;
+      }
+      .header, .sidebar, .new-btn, .results-actions, .action-btn {
+        display: none !important;
+      }
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+      .main-content {
+        padding: 0 !important;
+      }
+      .state-results {
+        display: flex !important;
+      }
+      .module-card {
+        break-inside: avoid;
+        border: 1px solid #94a3b8;
+        margin-bottom: 24px;
+        box-shadow: none !important;
+      }
+      .module-card__body {
+        display: block !important;
+      }
+      .module-card__arrow {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="container header__inner">
+      <a href="/" class="logo">
+        <div class="logo__icon">🤖</div>
+        <span>CodeReview AI</span>
+      </a>
+      <a href="/" class="nav-back">← 홈페이지로 이동</a>
+    </div>
+  </header>
+
+  <!-- WORKSPACE -->
+  <main class="workspace">
+    
+    <!-- LEFT SIDEBAR: CONTROL & INPUT -->
+    <aside class="sidebar">
+      <h1 class="sidebar__title">분석 설정</h1>
+      
+      <!-- Input Mode Tabs -->
+      <div class="tabs" role="tablist">
+        <button class="tab-btn active" role="tab" onclick="switchInputMode(this, 'github')">🐙 GitHub URL</button>
+        <button class="tab-btn" role="tab" onclick="switchInputMode(this, 'paste')">📋 코드 붙여넣기</button>
+        <button class="tab-btn" role="tab" onclick="switchInputMode(this, 'upload')">📁 파일 업로드</button>
+      </div>
+
+      <!-- TAB PANELS -->
+      <div class="tab-contents">
+        
+        <!-- Panel 1: GitHub -->
+        <div class="tab-panel active" id="panel-github">
+          <div class="form-group">
+            <label class="form-label">GitHub Pull Request 또는 URL</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="url" id="github-url" class="form-input" placeholder="https://github.com/owner/repo/pull/123" />
+              <button class="action-btn action-btn--primary" onclick="preFetchCode('github')" style="border-radius: var(--radius-md);">가져오기</button>
+            </div>
+            <p id="github-url-error" style="font-size: 0.72rem; color: var(--color-error); margin-top: 4px; display: none;">올바른 GitHub URL을 입력해 주세요.</p>
+          </div>
+        </div>
+
+        <!-- Panel 2: Paste Code -->
+        <div class="tab-panel" id="panel-paste">
+          <div class="form-group">
+            <label class="form-label">소스 코드 입력</label>
+            <textarea id="paste-code" class="form-textarea" placeholder="여기에 코드 소스를 입력해 주세요..."></textarea>
+          </div>
+        </div>
+
+        <!-- Panel 3: File Upload -->
+        <div class="tab-panel" id="panel-upload">
+          <div class="form-group">
+            <label class="form-label">코드 파일 업로드</label>
+            <div class="drop-zone" id="drop-zone">
+              <input type="file" id="file-input" accept=".py,.js,.ts,.jsx,.tsx,.java,.go,.rs,.cpp,.c,.cs,.rb,.php,.kt,.swift,.sql,.sh" onchange="handleFileSelect(event)" />
+              <div class="drop-zone__icon">📂</div>
+              <div class="drop-zone__title">파일을 여기로 드래그하세요</div>
+              <div class="drop-zone__desc">또는 클릭하여 파일 찾기</div>
+            </div>
+            
+            <div class="file-badge" id="file-badge">
+              <div>
+                <span class="file-badge__name" id="file-name">—</span>
+                <span class="file-badge__size" id="file-size">—</span>
+              </div>
+              <button class="file-badge__remove" onclick="clearUploadedFile()">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Code Metadata Preview Card (Common) -->
+      <div class="code-metadata-box" id="code-preview-card">
+        <div class="code-metadata-row">
+          <span class="code-metadata-label">파일명:</span>
+          <span class="code-metadata-val" id="meta-filename">—</span>
+        </div>
+        <div class="code-metadata-row">
+          <span class="code-metadata-label">감지된 언어:</span>
+          <span class="code-metadata-val" style="color: var(--color-primary);" id="meta-language">—</span>
+        </div>
+        <div class="code-metadata-row">
+          <span class="code-metadata-label">코드 크기:</span>
+          <span class="code-metadata-val" id="meta-size">—</span>
+        </div>
+      </div>
+
+      <!-- Common Advanced Options -->
+      <div class="form-group">
+        <label class="form-label">LLM 분석 엔진</label>
+        <select class="form-select" id="provider-select" onchange="saveSettings()">
+          <option value="openai" selected>🧠 GPT-4o-mini (표준)</option>
+          <option value="gemini">✨ Gemini 2.0 Flash (초고속)</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-top: 8px;">
+        <label class="form-label">API Key (선택사항)</label>
+        <input type="password" id="api-key-input" class="form-input" placeholder="직접 입력 시 시스템 환경변수를 덮어씁니다" oninput="saveSettings()" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">분석 모듈 활성화</label>
+        <div class="modules-check-grid">
+          <label class="module-item checked">
+            <input type="checkbox" checked value="code" onchange="toggleModuleCheck(this)" />
+            <span class="module-item__indicator"></span>
+            <span>📊 코드 분석</span>
+          </label>
+          <label class="module-item checked">
+            <input type="checkbox" checked value="bug" onchange="toggleModuleCheck(this)" />
+            <span class="module-item__indicator"></span>
+            <span>🐛 버그 탐지</span>
+          </label>
+          <label class="module-item checked">
+            <input type="checkbox" checked value="perf" onchange="toggleModuleCheck(this)" />
+            <span class="module-item__indicator"></span>
+            <span>⚡ 성능 개선</span>
+          </label>
+          <label class="module-item checked">
+            <input type="checkbox" checked value="refactor" onchange="toggleModuleCheck(this)" />
+            <span class="module-item__indicator"></span>
+            <span>🔧 리팩토링</span>
+          </label>
+          <label class="module-item checked">
+            <input type="checkbox" checked value="test" onchange="toggleModuleCheck(this)" />
+            <span class="module-item__indicator"></span>
+            <span>✅ 테스트 생성</span>
+          </label>
+        </div>
+      </div>
+
+      <button class="submit-btn" id="run-btn" onclick="startAnalysis()">
+        <span>🚀</span> AI 분석 파이프라인 가동
+      </button>
+
+    </aside>
+
+    <!-- RIGHT MAIN PANEL: STATE DISPLAY -->
+    <section class="main-content">
+      
+      <!-- STATE 1: EMPTY STATE -->
+      <div class="state-empty" id="view-empty">
+        <div class="state-empty__icon">🔍</div>
+        <h2 class="state-empty__title">코드 품질 검증 준비 완료</h2>
+        <p class="state-empty__desc">왼쪽 사이드바에서 분석 대상을 선택해 주세요. GitHub PR 연동, 코드 복사 및 개별 파일 제출을 지원합니다.</p>
+      </div>
+
+      <!-- STATE 2: RUNNING STATE -->
+      <div class="state-running" id="view-running">
+        <div class="spinner-ring"></div>
+        <div>
+          <h2 class="running-title" id="running-status-title">코드 정보를 분석 중입니다</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-top: 6px;">선택된 모듈들이 병렬로 실행되고 있습니다.</p>
+        </div>
+        
+        <div class="running-steps">
+          <div class="running-step" id="step-fetch">
+            <span class="running-step__icon">📂</span>
+            <span class="running-step__label">코드 리소스 획득</span>
+            <span id="step-fetch-status">대기 중</span>
+          </div>
+          <div class="running-step" id="step-code">
+            <span class="running-step__icon">📊</span>
+            <span class="running-step__label">종합 코드 분석</span>
+            <span id="step-code-status">대기 중</span>
+          </div>
+          <div class="running-step" id="step-bug">
+            <span class="running-step__icon">🐛</span>
+            <span class="running-step__label">런타임 버그 탐지</span>
+            <span id="step-bug-status">대기 중</span>
+          </div>
+          <div class="running-step" id="step-perf">
+            <span class="running-step__icon">⚡</span>
+            <span class="running-step__label">성능 개선 오차 범위 추론</span>
+            <span id="step-perf-status">대기 중</span>
+          </div>
+          <div class="running-step" id="step-refactor">
+            <span class="running-step__icon">🔧</span>
+            <span class="running-step__label">구조 리팩토링 검토</span>
+            <span id="step-refactor-status">대기 중</span>
+          </div>
+          <div class="running-step" id="step-test">
+            <span class="running-step__icon">✅</span>
+            <span class="running-step__label">단위 테스트 케이스 생성</span>
+            <span id="step-test-status">대기 중</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATE 3: RESULTS STATE -->
+      <div class="state-results" id="view-results">
+        
+        <!-- Header -->
+        <div class="results-header">
+          <div class="results-header__info">
+            <h2 id="result-page-title">분석 레포트</h2>
+            <div class="results-header__meta" id="result-meta-info">—</div>
+          </div>
+          <div class="results-actions">
+            <button class="action-btn" onclick="downloadJSON()">📥 JSON 다운로드</button>
+            <button class="action-btn action-btn--primary" onclick="printPDF()">📄 PDF 보고서 인쇄</button>
+          </div>
+        </div>
+
+        <!-- Metrics Dashboard -->
+        <div class="metrics-bar">
+          <div class="metric-card">
+            <div class="metric-card__val" style="color: var(--color-error);" id="metric-critical">0</div>
+            <div class="metric-card__label">🔴 Critical 위험 지점</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-card__val" style="color: var(--color-warning);" id="metric-warning">0</div>
+            <div class="metric-card__label">🟡 Warning 권장 지점</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-card__val" style="color: var(--color-info);" id="metric-info">0</div>
+            <div class="metric-card__label">🔵 Info 일반 리포트</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-card__val" style="color: var(--color-primary);" id="metric-engine">—</div>
+            <div class="metric-card__label">⚙️ 활성 분석 엔진</div>
+          </div>
+        </div>
+
+        <!-- Modules Detailed View Output Container -->
+        <div id="results-modules-container" style="display: flex; flex-direction: column; gap: 16px;"></div>
+
+        <button class="new-btn" onclick="resetWorkspace()">＋ 다른 코드 분석하기</button>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    // Config
+    const MODULE_INFO = {
+      code: { label: '종합 코드 분석', icon: '📊' },
+      bug: { label: '런타임 버그 탐지', icon: '🐛' },
+      perf: { label: '성능 개선 추론', icon: '⚡' },
+      refactor: { label: '구조 리팩토링 검토', icon: '🔧' },
+      test: { label: '단위 테스트 케이스 생성', icon: '✅' }
+    };
+
+    // State Variables
+    let currentInputMode = 'github';
+    let fetchedCodeData = null;  // For pre-fetched metadata
+    let uploadedCodeText = '';
+    let analysisResults = {};
+    let activeAnalysisAbort = null;
+
+    // Initialize Marked Option
+    marked.setOptions({ breaks: true, gfm: true });
+
+    // Drag & Drop Listener setup
+    const dropZone = document.getElementById('drop-zone');
+    if (dropZone) {
+      dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+      dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); });
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+      });
+    }
+
+    // Toggle Checkboxes visually
+    function toggleModuleCheck(checkbox) {
+      checkbox.closest('.module-item').classList.toggle('checked', checkbox.checked);
+    }
+
+    // Switch Input Mode Tabs
+    function switchInputMode(btn, mode) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + mode).classList.add('active');
+      currentInputMode = mode;
+      
+      // Clear preview metadata card on tab switch to avoid confusion
+      clearCodePreviewCard();
+    }
+
+    // File Processing logic
+    function handleFileSelect(e) {
+      if (e.target.files[0]) processFile(e.target.files[0]);
+    }
+
+    function processFile(file) {
+      document.getElementById('file-name').textContent = file.name;
+      document.getElementById('file-size').textContent = (file.size / 1024).toFixed(1) + ' KB';
+      document.getElementById('file-badge').classList.add('visible');
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        uploadedCodeText = e.target.result;
+        // Mock local preview metadata update
+        updateCodePreviewCard(file.name, file.size, uploadedCodeText);
+      };
+      reader.readAsText(file);
+    }
+
+    function clearUploadedFile() {
+      document.getElementById('file-input').value = '';
+      document.getElementById('file-badge').classList.remove('visible');
+      uploadedCodeText = '';
+      clearCodePreviewCard();
+    }
+
+    // Preview card helpers
+    function updateCodePreviewCard(filename, bytes, content) {
+      document.getElementById('meta-filename').textContent = filename || 'direct_input';
+      
+      // Heuristic language fetch
+      let detectedLang = 'Unknown';
+      const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+      const extMap = { py:'Python', js:'JavaScript', ts:'TypeScript', java:'Java', go:'Go', rs:'Rust', cpp:'C++', c:'C', cs:'C#', sql:'SQL', sh:'Shell' };
+      if (extMap[ext]) {
+        detectedLang = extMap[ext];
+      } else {
+        if (content.includes('def ') && content.includes('import ')) detectedLang = 'Python';
+        else if (content.includes('function ') || content.includes('const ')) detectedLang = 'JavaScript';
+      }
+
+      document.getElementById('meta-language').textContent = detectedLang;
+      document.getElementById('meta-size').textContent = (bytes / 1024).toFixed(1) + ' KB (' + content.split('\n').length + '줄)';
+      document.getElementById('code-preview-card').classList.add('visible');
+      
+      // Store to mock fetchedCodeData locally
+      fetchedCodeData = {
+        code: content,
+        filename: filename,
+        detected_language: detectedLang,
+        code_length: content.length
+      };
+    }
+
+    function clearCodePreviewCard() {
+      document.getElementById('code-preview-card').classList.remove('visible');
+      fetchedCodeData = null;
+    }
+
+    // Pre-fetch code metadata using `/api/v1/fetch-code`
+    async function preFetchCode() {
+      const urlInput = document.getElementById('github-url');
+      const url = urlInput.value.trim();
+      const errEl = document.getElementById('github-url-error');
+      
+      if (!url || !/^https:\/\/github\.com\/.+\/.+/.test(url)) {
+        errEl.style.display = 'block';
+        urlInput.focus();
+        return;
+      }
+      errEl.style.display = 'none';
+
+      try {
+        const resp = await fetch('/api/v1/fetch-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            input_type: 'github',
+            content: url
+          })
+        });
+
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.detail || '가져오기 실패');
+        }
+
+        const data = await resp.json();
+        fetchedCodeData = data; // store global
+
+        // Update code metadata box
+        document.getElementById('meta-filename').textContent = data.filename || 'GitHub PR';
+        document.getElementById('meta-language').textContent = data.detected_language || 'Auto';
+        document.getElementById('meta-size').textContent = (data.code_length / 1024).toFixed(1) + ' KB';
+        document.getElementById('code-preview-card').classList.add('visible');
+
+      } catch (err) {
+        alert('GitHub 코드 조회 오류: ' + err.message);
+        clearCodePreviewCard();
+      }
+    }
+
+    // Start streaming analysis
+    async function startAnalysis() {
+      if (activeAnalysisAbort) {
+        activeAnalysisAbort.abort();
+        activeAnalysisAbort = null;
+      }
+      let inputType = '';
+      let content = '';
+      let provider = document.getElementById('provider-select').value;
+      let apiKey = document.getElementById('api-key-input').value.trim();
+      
+      // Gather inputs
+      if (currentInputMode === 'github') {
+        const url = document.getElementById('github-url').value.trim();
+        if (!url) {
+          document.getElementById('github-url-error').style.display = 'block';
+          document.getElementById('github-url').focus();
+          return;
+        }
+        inputType = 'github';
+        content = url;
+      } else if (currentInputMode === 'paste') {
+        const pasteVal = document.getElementById('paste-code').value.trim();
+        if (!pasteVal) {
+          alert('분석할 코드를 입력해 주세요.');
+          document.getElementById('paste-code').focus();
+          return;
+        }
+        inputType = 'code';
+        content = pasteVal;
+        updateCodePreviewCard('direct_input.txt', pasteVal.length, pasteVal);
+      } else {
+        if (!uploadedCodeText) {
+          alert('코드 파일을 업로드해 주세요.');
+          return;
+        }
+        inputType = 'code';
+        content = uploadedCodeText;
+      }
+
+      // Selected modules collection
+      const selectedModules = [];
+      document.querySelectorAll('.modules-check-grid input[type="checkbox"]:checked').forEach(cb => {
+        selectedModules.push(cb.value);
+      });
+
+      if (selectedModules.length === 0) {
+        alert('분석 모듈을 하나 이상 선택해 주세요.');
+        return;
+      }
+
+      // Switch view layout state to RUNNING
+      document.getElementById('view-empty').style.display = 'none';
+      document.getElementById('view-results').style.display = 'none';
+      document.getElementById('view-running').style.display = 'flex';
+
+      // Reset step indicator status text
+      const steps = ['fetch', 'code', 'bug', 'perf', 'refactor', 'test'];
+      steps.forEach(s => {
+        const el = document.getElementById('step-' + s);
+        const st = document.getElementById('step-' + s + '-status');
+        el.className = 'running-step';
+        st.textContent = '대기 중';
+        
+        // Hide if not selected
+        if (s !== 'fetch' && !selectedModules.includes(s)) {
+          el.style.display = 'none';
+        } else {
+          el.style.display = 'flex';
+        }
+      });
+
+      // Update active fetching state
+      const fetchStep = document.getElementById('step-fetch');
+      fetchStep.className = 'running-step active';
+      document.getElementById('step-fetch-status').innerHTML = '<span class="running-step__spinner"></span>';
+      document.getElementById('running-status-title').textContent = '코드를 불러오고 있습니다';
+
+      analysisResults = {};
+      activeAnalysisAbort = new AbortController();
+
+      try {
+        const resp = await fetch('/api/v1/analyze/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            input_type: inputType,
+            content: content,
+            language: 'auto',
+            analysis_types: selectedModules,
+            provider: provider,
+            api_key: apiKey || null
+          }),
+          signal: activeAnalysisAbort.signal
+        });
+
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.detail || '스트림 연결 오류');
+        }
+
+        // Complete fetch state
+        fetchStep.className = 'running-step done';
+        document.getElementById('step-fetch-status').textContent = '완료 ✓';
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let streamBuffer = '';
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          streamBuffer += decoder.decode(value, { stream: true });
+          const lines = streamBuffer.split('\n');
+          streamBuffer = lines.pop(); // keep last chunk
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const dataStr = line.slice(6).trim();
+              try {
+                const parsedEvent = JSON.parse(dataStr);
+                handleAnalysisEvent(parsedEvent, selectedModules, provider);
+              } catch (e) {
+                // skip broken json
+              }
+            }
+          }
+        }
+
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          alert('분석 파이프라인 가동 에러: ' + err.message);
+          resetWorkspace();
+        }
+      } finally {
+        activeAnalysisAbort = null;
+      }
+    }
+
+    // Process parsed SSE events
+    function handleAnalysisEvent(ev, selectedModules, provider) {
+      switch (ev.type) {
+        case 'section_start': {
+          const stepEl = document.getElementById('step-' + ev.analysis_type);
+          if (stepEl) {
+            stepEl.className = 'running-step active';
+            document.getElementById('step-' + ev.analysis_type + '-status').innerHTML = '<span class="running-step__spinner"></span>';
+            document.getElementById('running-status-title').textContent = MODULE_INFO[ev.analysis_type].label + ' 진행 중...';
+          }
+          break;
+        }
+
+        case 'chunk':
+          analysisResults[ev.analysis_type] = (analysisResults[ev.analysis_type] || '') + ev.content;
+          break;
+
+        case 'section_end': {
+          const stepEl = document.getElementById('step-' + ev.analysis_type);
+          if (stepEl) {
+            stepEl.className = 'running-step done';
+            document.getElementById('step-' + ev.analysis_type + '-status').textContent = '완료 ✓';
+          }
+          break;
+        }
+
+        case 'error': {
+          const stepEl = document.getElementById('step-' + ev.analysis_type);
+          if (stepEl) {
+            stepEl.className = 'running-step';
+            stepEl.style.borderColor = 'var(--color-error)';
+            document.getElementById('step-' + ev.analysis_type + '-status').style.color = 'var(--color-error)';
+            document.getElementById('step-' + ev.analysis_type + '-status').textContent = '오류';
+          }
+          analysisResults[ev.analysis_type] = `🔴 **분석 중 에러가 발생했습니다:**\n\`\`\`\n${ev.message}\n\`\`\``;
+          break;
+        }
+
+        case 'done':
+          renderAnalysisResults(selectedModules, provider);
+          break;
+
+        case 'fatal_error':
+          alert('致命的인 오류: ' + ev.message);
+          resetWorkspace();
+          break;
+      }
+    }
+
+    // Render streamed results inside workspace
+    function renderAnalysisResults(selectedModules, provider) {
+      document.getElementById('view-running').style.display = 'none';
+      
+      // Engine badge
+      document.getElementById('metric-engine').textContent = provider === 'gemini' ? 'Gemini 2.0' : 'GPT-4o';
+      
+      // Calculate issues stats count (simple keyword scans)
+      const allText = Object.values(analysisResults).join('\n');
+      const criticalCount = (allText.match(/🔴|Critical|심각/gi) || []).length;
+      const warningCount = (allText.match(/🟡|Warning|경고/gi) || []).length;
+      const infoCount = (allText.match(/🟢|🔵|Info|정보/gi) || []).length;
+
+      document.getElementById('metric-critical').textContent = criticalCount;
+      document.getElementById('metric-warning').textContent = warningCount;
+      document.getElementById('metric-info').textContent = infoCount;
+
+      // Meta header string
+      const filename = (fetchedCodeData && fetchedCodeData.filename) ? fetchedCodeData.filename : 'direct_input.txt';
+      const dateStr = new Date().toLocaleString();
+      document.getElementById('result-meta-info').textContent = `${filename} · ${dateStr}`;
+
+      // Construct detailed collapsible modules
+      const container = document.getElementById('results-modules-container');
+      container.innerHTML = '';
+
+      selectedModules.forEach(key => {
+        const info = MODULE_INFO[key];
+        const mdText = analysisResults[key] || '분석 결과를 받지 못했습니다.';
+        
+        // Custom finding format helper (replace bullet formats to colored div tags)
+        let parsedHtml = marked.parse(mdText);
+        parsedHtml = parsedHtml.replace(
+          /<li>\[Critical\](.*?)(<\/li>)/gi, 
+          '<div class="finding-block finding-block--critical"><strong>🔴 Critical:</strong> $1</div>'
+        ).replace(
+          /<li>\[Warning\](.*?)(<\/li>)/gi, 
+          '<div class="finding-block finding-block--warning"><strong>🟡 Warning:</strong> $1</div>'
+        ).replace(
+          /<li>\[Info\](.*?)(<\/li>)/gi, 
+          '<div class="finding-block finding-block--info"><strong>🔵 Info:</strong> $1</div>'
+        );
+
+        const card = document.createElement('article');
+        card.className = 'module-card open';
+        card.id = 'module-card-' + key;
+        card.innerHTML = `
+          <div class="module-card__header" onclick="toggleModuleCard('module-card-${key}')">
+            <div class="module-card__icon">${info.icon}</div>
+            <h3 class="module-card__title">${info.label}</h3>
+            <span class="module-card__arrow">▾</span>
+          </div>
+          <div class="module-card__body">
+            <div class="markdown-body">${parsedHtml}</div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      document.getElementById('view-results').style.display = 'flex';
+    }
+
+    function toggleModuleCard(id) {
+      document.getElementById(id).classList.toggle('open');
+    }
+
+    // Reset workspace states
+    function resetWorkspace() {
+      if (activeAnalysisAbort) {
+        activeAnalysisAbort.abort();
+        activeAnalysisAbort = null;
+      }
+      document.getElementById('view-results').style.display = 'none';
+      document.getElementById('view-running').style.display = 'none';
+      document.getElementById('view-empty').style.display = 'flex';
+      
+      // Clear values if paste
+      if (currentInputMode === 'paste') {
+        document.getElementById('paste-code').value = '';
+      }
+      clearCodePreviewCard();
+    }
+
+    // Download JSON report
+    function downloadJSON() {
+      const data = {
+        timestamp: new Date().toISOString(),
+        provider: document.getElementById('provider-select').value,
+        metadata: fetchedCodeData,
+        reports: analysisResults
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'codereview-report-' + Date.now() + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Print PDF
+    function printPDF() {
+      window.print();
+    }
+
+    // --- Settings Persistence & Debounce ---
+    function saveSettings() {
+      localStorage.setItem('codeReview_provider', document.getElementById('provider-select').value);
+      localStorage.setItem('codeReview_apiKey', document.getElementById('api-key-input').value.trim());
+    }
+
+    function loadSettings() {
+      const savedProvider = localStorage.getItem('codeReview_provider');
+      const savedKey = localStorage.getItem('codeReview_apiKey');
+      if (savedProvider) document.getElementById('provider-select').value = savedProvider;
+      if (savedKey) document.getElementById('api-key-input').value = savedKey;
+    }
+
+    let pasteDebounceTimer = null;
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSettings();
+      
+      const pasteInput = document.getElementById('paste-code');
+      if (pasteInput) {
+        pasteInput.addEventListener('input', () => {
+          clearTimeout(pasteDebounceTimer);
+          pasteDebounceTimer = setTimeout(() => {
+            if (pasteInput.value.trim() !== '' && currentInputMode === 'paste') {
+              startAnalysis();
+            }
+          }, 2000);
+        });
+      }
+    });
+  </script>
+</body>
+</html>
